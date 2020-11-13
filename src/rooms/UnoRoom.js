@@ -3,6 +3,8 @@ const UnoRoomState = require('./schema/UnoRoomState').unoRoomState;
 const { createCards } = require('../utils/cards');
 const { Player } = require('./schema/UnoPlayer');
 
+const { INITIAL_CARDS_NUM } = require('../rooms/constants');
+
 exports.UnoRoom = class extends colyseus.Room {
   onCreate(options) {
     console.log('create the room');
@@ -11,13 +13,20 @@ exports.UnoRoom = class extends colyseus.Room {
     this.deck = createCards();
     this.state.deckSize = this.deck.length;
 
-    this.onMessage('ready', (client, message) => {
-      console.log('ready recieved:', message);
+    this.onMessage('start', (client, message) => {
+      const isOwner = this.getPlayerById(client.sessionId);
+      if (isOwner) {
+        console.log('start game');
+        this.state.isRunning = true;
+      }
+      this.onStart();
     });
 
-    this.onMessage('getCard', (client, message) => {
-      console.log('getCard recieved:', client.sessionId);
-      this.getCard(client.sessionId);
+    this.onMessage('playCard', (client, cardId) => {
+      console.log('playCard recieved:', client.sessionId);
+      const card = this.getPlayerById(client.sessionId).playCard(cardId);
+      console.log('received card', card);
+      this.state.stack.push(card);
     });
   }
 
@@ -25,6 +34,7 @@ exports.UnoRoom = class extends colyseus.Room {
     console.log(`Player joined: id=${client.id} name:${options.name}`);
 
     const player = new Player({ id: client.id, ...options });
+    player.isOwner = !this.state.players.length;
     this.state.players.push(player);
   }
 
@@ -34,18 +44,32 @@ exports.UnoRoom = class extends colyseus.Room {
 
   getCard(id) {
     const player = this.getPlayerById(id);
-    player.update(this.getRandomCard());
+    player.updateCards(this.getRandomCard());
+  }
+
+  onStart() {
+    this.state.players.forEach(player => {
+      player.updateCards(this.dealCards(INITIAL_CARDS_NUM))
+    })
+  }
+
+  dealCards(value) {
+    let cards = [];
+    for (let i = 0; i < value; i++) {
+      cards.push(this.getRandomCard());
+    }
+    return cards;
   }
 
   getRandomCard() {
     const rnd = Math.floor(Math.random() * this.deck.length);
-    const card = this.deck.splice(rnd, 1);
+    const card = this.deck.splice(rnd, 1)[0];
     this.state.deckSize = this.deck.length;
     return card;
   }
 
   getPlayerById(id) {
-    return this.state.players.find(player => player.id === id);
+    return this.state.players.find((player) => player.id === id);
   }
 
   onDispose() {}

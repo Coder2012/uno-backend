@@ -9,13 +9,27 @@ class Player extends Schema {
     this.id = id;
     this.name = name;
     this.isReady = false;
+    this.isOwner = false;
     this.cards = new schema.ArraySchema();
+    this.cardsLength = 0;
   }
 
-  update(cards) {
+  updateCards(cards) {
     console.log(cards.length);
     this.cards.push(...cards);
     this.cardsLength = this.cards.length;
+    console.log('after');
+  }
+
+  playCard(cardId) {
+    let card = null;
+    const index = this.cards.map((card) => card.id).indexOf(cardId);
+   
+    if (index > -1) {
+      card = this.cards.splice(index, 1)[0];
+      this.cardsLength = this.cards.length;
+    }
+    return card;
   }
 }
 
@@ -23,6 +37,7 @@ schema.defineTypes(Player, {
   id: 'string',
   name: 'string',
   isReady: 'boolean',
+  isOwner: 'boolean',
   cards: [Card],
   cardsLength: 'number',
 });
