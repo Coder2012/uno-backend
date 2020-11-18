@@ -21,14 +21,27 @@ class Player extends Schema {
     console.log('after');
   }
 
+  getCardIndex(cardId) {
+    return this.cards.map((card) => card.id).indexOf(cardId);
+  }
+
+  hasCard(cardId) {
+    return this.getCardIndex(cardId) > -1;
+  }
+
+  getCardById(cardId) {
+    if (this.hasCard(cardId)) {
+      const index = this.getCardIndex(cardId);
+      return this.cards[index];
+    }
+    return null;
+  }
+
   playCard(cardId) {
     let card = null;
-    const index = this.cards.map((card) => card.id).indexOf(cardId);
-   
-    if (index > -1) {
-      card = this.cards.splice(index, 1)[0];
-      this.cardsLength = this.cards.length;
-    }
+    const index = this.getCardIndex(cardId);
+    card = this.cards.splice(index, 1)[0];
+    this.cardsLength = this.cards.length;
     return card;
   }
 }

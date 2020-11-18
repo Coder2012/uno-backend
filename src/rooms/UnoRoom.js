@@ -6,17 +6,21 @@ const { Player } = require('./schema/UnoPlayer');
 const { INITIAL_CARDS_NUM } = require('../rooms/constants');
 
 exports.UnoRoom = class extends colyseus.Room {
+  constructor() {
+    super();
+
+    this.playerIndex = 0;
+  }
+
   onCreate(options) {
-    console.log('create the room');
+    this.setPatchRate(50);
     this.setState(new UnoRoomState());
-    // this.state.cards.push(...createCards());
     this.deck = createCards();
     this.state.deckSize = this.deck.length;
 
     this.onMessage('start', (client, message) => {
       const isOwner = this.getPlayerById(client.sessionId);
       if (isOwner) {
-        console.log('start game');
         this.state.isRunning = true;
       }
       this.onStart();
@@ -24,9 +28,21 @@ exports.UnoRoom = class extends colyseus.Room {
 
     this.onMessage('playCard', (client, cardId) => {
       console.log('playCard recieved:', client.sessionId);
-      const card = this.getPlayerById(client.sessionId).playCard(cardId);
-      console.log('received card', card);
-      this.state.stack.push(card);
+      const player = this.getPlayerById(client.sessionId);
+
+      // it's not your turn!
+      if (player.id !== this.state.activePlayerId) return;
+
+      const card = player.getCardById(cardId);
+      if (!this.isValidCard(card)) return;
+
+      if (card) {
+        const card = player.playCard(cardId);
+        console.log('received card', card);
+        this.state.stack.push(card);
+        console.log('player cards', JSON.stringify(player.cards));
+        this.updatePlayerTurn();
+      }
     });
   }
 
@@ -48,9 +64,35 @@ exports.UnoRoom = class extends colyseus.Room {
   }
 
   onStart() {
-    this.state.players.forEach(player => {
-      player.updateCards(this.dealCards(INITIAL_CARDS_NUM))
-    })
+    this.state.players.forEach((player) => {
+      player.updateCards(this.dealCards(INITIAL_CARDS_NUM));
+    });
+    this.updatePlayerTurn();
+  }
+
+  isValidCard(card) {
+    const lastCard = this.state.stack[this.state.stack.length - 1];
+
+    if (!lastCard) return true;
+    else if (card.color === lastCard.color) return true;
+    else if (!card.color) return true;
+    // hack for wild cards
+    else if (card.value && card.value === lastCard.value) return true;
+    else if (card.action && card.action?.type === lastCard.action?.type) return true;
+
+    return false;
+  }
+
+  updatePlayerTurn() {
+    if (!this.state.activePlayerId) {
+      this.state.activePlayerId = this.state.players[this.playerIndex].id;
+      console.log('player turn:', this.state.activePlayerId);
+    } else {
+      // next player
+      this.playerIndex = this.playerIndex === this.state.players.length - 1 ? 0 : this.playerIndex + 1;
+      console.log('index', this.playerIndex);
+      this.state.activePlayerId = this.state.players[this.playerIndex].id;
+    }
   }
 
   dealCards(value) {

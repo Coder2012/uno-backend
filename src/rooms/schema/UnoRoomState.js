@@ -8,6 +8,7 @@ class UnoRoomState extends schema.Schema {
     this.players = new schema.ArraySchema();
     this.stack = new schema.ArraySchema();
     this.isRunning = false;
+    this.activePlayerId = null;
   }
 }
 
@@ -16,6 +17,7 @@ schema.defineTypes(UnoRoomState, {
   stack: [Card],
   deckSize: 'number',
   isRunning: 'boolean',
+  activePlayerId: 'string',
 });
 
 exports.unoRoomState = UnoRoomState;
