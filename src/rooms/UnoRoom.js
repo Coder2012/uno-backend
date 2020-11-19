@@ -9,6 +9,7 @@ exports.UnoRoom = class extends colyseus.Room {
   constructor() {
     super();
 
+    this.currentCard = null;
     this.playerIndex = 0;
   }
 
@@ -33,16 +34,20 @@ exports.UnoRoom = class extends colyseus.Room {
       // it's not your turn!
       if (player.id !== this.state.activePlayerId) return;
 
-      const card = player.getCardById(cardId);
-      if (!this.isValidCard(card)) return;
+      this.currentCard = player.getCardById(cardId);
 
-      if (card) {
-        const card = player.playCard(cardId);
-        console.log('received card', card);
-        this.state.stack.push(card);
-        console.log('player cards', JSON.stringify(player.cards));
-        this.updatePlayerTurn();
+      if (/^wild.*/.test(this.currentCard.action?.type)) {
+        client.send('getColor');
+        return;
       }
+
+      if (!this.isValidCard(this.currentCard)) return;
+      this.playCard(player, cardId);
+    });
+
+    this.onMessage('colorSelected', (client, colorId) => {
+      const player = this.getPlayerById(client.sessionId);
+      this.playCard(player, this.currentCard.id, colorId);
     });
   }
 
@@ -70,6 +75,13 @@ exports.UnoRoom = class extends colyseus.Room {
     this.updatePlayerTurn();
   }
 
+  playCard(player, cardId, colorId = null) {
+    this.currentCard.color = colorId;
+    player.playCard(cardId);
+    this.state.stack.push(this.currentCard);
+    this.updatePlayerTurn();
+  }
+
   isValidCard(card) {
     const lastCard = this.state.stack[this.state.stack.length - 1];
 
@@ -81,6 +93,10 @@ exports.UnoRoom = class extends colyseus.Room {
     else if (card.action && card.action?.type === lastCard.action?.type) return true;
 
     return false;
+  }
+
+  requiresColorChoice(card) {
+    return /^wild.*/.test(card.action.type);
   }
 
   updatePlayerTurn() {
@@ -98,7 +114,9 @@ exports.UnoRoom = class extends colyseus.Room {
   dealCards(value) {
     let cards = [];
     for (let i = 0; i < value; i++) {
-      cards.push(this.getRandomCard());
+      // cards.push(this.getRandomCard());
+      cards.push(this.deck.splice(this.deck.length - 1, 1)[0]);
+      this.state.deckSize = this.deck.length;
     }
     return cards;
   }
