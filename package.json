@@ -4,6 +4,9 @@
   "version": "1.0.0",
   "description": "npm init template for bootstraping an empty Colyseus project",
   "main": "index.js",
+  "engines": {
+    "node": "14.x"
+  },
   "scripts": {
     "start": "nodemon src/index.js",
     "loadtest": "colyseus-loadtest loadtest/example.js --room my_room --numClients 2",
