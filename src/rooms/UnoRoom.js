@@ -5,7 +5,9 @@ const { Player } = require('./schema/UnoPlayer');
 
 const { INITIAL_CARDS_NUM } = require('../rooms/constants');
 
-exports.UnoRoom = class extends colyseus.Room {
+exports.UnoRoom = class extends (
+  colyseus.Room
+) {
   constructor() {
     super();
 
@@ -13,10 +15,20 @@ exports.UnoRoom = class extends colyseus.Room {
     this.playerIndex = 0;
   }
 
+  debugCards() {
+    for (const card in this.deck) {
+      if (this.deck.hasOwnProperty(card)) {
+        const element = this.deck[card];
+        console.log(element.id, element.className);
+      }
+    }
+  }
+
   onCreate(options) {
     this.setPatchRate(50);
     this.setState(new UnoRoomState());
     this.deck = createCards();
+    this.debugCards();
     this.state.deckSize = this.deck.length;
 
     this.onMessage('start', (client, message) => {
@@ -36,11 +48,12 @@ exports.UnoRoom = class extends colyseus.Room {
 
       this.currentCard = player.getCardById(cardId);
 
-      if (/^wild.*/.test(this.currentCard.action?.type)) {
+      if (this.requiresColorChoice()) {
         client.send('getColor');
         return;
       }
 
+      // if player can't go, they need to pickup a card
       if (!this.isValidCard(this.currentCard)) return;
       this.playCard(player, cardId);
     });
@@ -48,6 +61,12 @@ exports.UnoRoom = class extends colyseus.Room {
     this.onMessage('colorSelected', (client, colorId) => {
       const player = this.getPlayerById(client.sessionId);
       this.playCard(player, this.currentCard.id, colorId);
+    });
+
+    this.onMessage('getCard', (client) => {
+      const player = this.getPlayerById(client.sessionId);
+      player.updateCards(this.dealCards());
+      this.choosePlayer();
     });
   }
 
@@ -63,11 +82,6 @@ exports.UnoRoom = class extends colyseus.Room {
     console.log(`Player left: id=${client.id}`);
   }
 
-  getCard(id) {
-    const player = this.getPlayerById(id);
-    player.updateCards(this.getRandomCard());
-  }
-
   onStart() {
     this.state.players.forEach((player) => {
       player.updateCards(this.dealCards(INITIAL_CARDS_NUM));
@@ -76,13 +90,14 @@ exports.UnoRoom = class extends colyseus.Room {
   }
 
   playCard(player, cardId, colorId = null) {
-    this.currentCard.color = colorId;
+    if (colorId) this.currentCard.color = colorId;
     player.playCard(cardId);
     this.state.stack.push(this.currentCard);
     this.updatePlayerTurn();
   }
 
-  isValidCard(card) {
+  isValidCard() {
+    const card = this.currentCard;
     const lastCard = this.state.stack[this.state.stack.length - 1];
 
     if (!lastCard) return true;
@@ -95,28 +110,84 @@ exports.UnoRoom = class extends colyseus.Room {
     return false;
   }
 
-  requiresColorChoice(card) {
-    return /^wild.*/.test(card.action.type);
+  requiresColorChoice() {
+    return /^wild.*/.test(this.currentCard.action?.type);
+  }
+
+  checkPlayerPenaltyCards() {
+    const numCards = this.currentCard.action?.value;
+    if (numCards) {
+      this.getPlayerById(this.state.activePlayerId).updateCards(this.dealCards(numCards));
+    }
   }
 
   updatePlayerTurn() {
     if (!this.state.activePlayerId) {
       this.state.activePlayerId = this.state.players[this.playerIndex].id;
-      console.log('player turn:', this.state.activePlayerId);
-    } else {
-      // next player
-      this.playerIndex = this.playerIndex === this.state.players.length - 1 ? 0 : this.playerIndex + 1;
-      console.log('index', this.playerIndex);
-      this.state.activePlayerId = this.state.players[this.playerIndex].id;
+      return;
     }
+
+    switch (this.currentCard.action?.type) {
+      case 'reverse':
+        this.changeDirection();
+        if (this.state.players.length > 2) {
+          this.choosePlayer();
+        }
+        break;
+
+      case 'skip':
+        if (this.state.players.length > 2) {
+          this.skipPlayer();
+        }
+        break;
+
+      case 'drawTwo':
+        this.choosePlayer();
+        this.getPlayerById(this.state.activePlayerId).dealCards(2);
+        this.choosePlayer();
+        break;
+
+      case 'wildDrawFour':
+        this.choosePlayer();
+        this.getPlayerById(this.state.activePlayerId).dealCards(2);
+        this.choosePlayer();
+        break;
+
+      default:
+        this.choosePlayer();
+    }
+
+    this.checkPlayerPenaltyCards();
   }
 
-  dealCards(value) {
+  changeDirection() {
+    this.state.isClockwiseDirection = !this.state.isClockwiseDirection;
+  }
+
+  skipPlayer() {
+    this.choosePlayer();
+    this.choosePlayer();
+  }
+
+  choosePlayer() {
+    this.playerIndex = this.state.isClockwiseDirection ? this.nextPlayer() : this.previousPlayer();
+    this.state.activePlayerId = this.state.players[this.playerIndex].id;
+  }
+
+  nextPlayer() {
+    return this.playerIndex === this.state.players.length - 1 ? 0 : this.playerIndex + 1;
+  }
+
+  previousPlayer() {
+    return this.playerIndex === 0 ? this.state.players.length - 1 : this.playerIndex - 1;
+  }
+
+  dealCards(value = 1) {
     let cards = [];
     for (let i = 0; i < value; i++) {
-      // cards.push(this.getRandomCard());
-      cards.push(this.deck.splice(this.deck.length - 1, 1)[0]);
-      this.state.deckSize = this.deck.length;
+      cards.push(this.getRandomCard());
+      // cards.push(this.deck.splice(this.deck.length - 1, 1)[0]);
+      //this.state.deckSize = this.deck.length;
     }
     return cards;
   }

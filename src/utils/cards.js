@@ -1,4 +1,4 @@
-const { Action, Card } = require("../rooms/schema/UnoCard");
+const { Action, Card } = require('../rooms/schema/UnoCard');
 let id;
 
 /*
@@ -16,39 +16,37 @@ let id;
 
 const actions = [
   new Action({
-    type: "drawTwo",
-    label: "Draw two",
+    type: 'drawTwo',
+    label: 'Draw two',
     value: 2,
   }),
   new Action({
-    type: "reverse",
-    label: "Reverse",
+    type: 'reverse',
+    label: 'Reverse',
     value: 0,
   }),
   new Action({
-    type: "skip",
-    label: "Skip",
+    type: 'skip',
+    label: 'Skip',
     value: 0,
   }),
 ];
 
 const wildActions = [
   new Action({
-    type: "wild",
-    label: "Change colour",
+    type: 'wild',
+    label: 'Change colour',
     value: 0,
   }),
   new Action({
-    type: "wildDrawFour",
-    label: "Draw four",
+    type: 'wildDrawFour',
+    label: 'Draw four',
     value: 4,
   }),
 ];
 
 const getCard = ({ color = null, value = null, action = null }) => {
-  const className = `${color || ""}${value !== null ? value : ""}${
-    action ? action.type : ""
-  }`;
+  const className = `${color || ''}${value !== null ? value : ''}${action ? action.type : ''}`;
 
   return new Card({
     id: id++,
@@ -79,7 +77,7 @@ const getActionCards = ({ amount, color, action }) => {
 const createCards = () => {
   id = 1;
   const cards = [];
-  const colors = ["blue", "green", "red", "yellow"];
+  const colors = ['blue', 'green', 'red', 'yellow'];
 
   for (const color of colors) {
     cards.push(...getNumberCards(0, 9, color));

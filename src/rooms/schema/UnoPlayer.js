@@ -18,7 +18,6 @@ class Player extends Schema {
     console.log(cards.length);
     this.cards.push(...cards);
     this.cardsLength = this.cards.length;
-    console.log('after');
   }
 
   getCardIndex(cardId) {
@@ -55,9 +54,9 @@ schema.defineTypes(Player, {
   cardsLength: 'number',
 });
 
-schema.filter(function (client, value, root) {
-  return client.sessionId === this.id;
-})(Player.prototype, 'id');
+// schema.filter(function (client, value, root) {
+//   return client.sessionId === this.id;
+// })(Player.prototype, 'id');
 
 schema.filter(function (client, value, root) {
   console.log('client: ', client.sessionId);
