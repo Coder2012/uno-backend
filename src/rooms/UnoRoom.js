@@ -28,7 +28,7 @@ exports.UnoRoom = class extends (
     this.setPatchRate(50);
     this.setState(new UnoRoomState());
     this.deck = createCards();
-    this.debugCards();
+    // this.debugCards();
     this.state.deckSize = this.deck.length;
 
     this.onMessage('start', (client, message) => {
@@ -66,8 +66,11 @@ exports.UnoRoom = class extends (
     this.onMessage('getCard', (client) => {
       const player = this.getPlayerById(client.sessionId);
       player.updateCards(this.dealCards());
-      this.choosePlayer();
     });
+
+    this.onMessage('pass', (client) => {
+      this.choosePlayer();
+    })
   }
 
   onJoin(client, options) {
@@ -114,14 +117,9 @@ exports.UnoRoom = class extends (
     return /^wild.*/.test(this.currentCard.action?.type);
   }
 
-  checkPlayerPenaltyCards() {
-    const numCards = this.currentCard.action?.value;
-    if (numCards) {
-      this.getPlayerById(this.state.activePlayerId).updateCards(this.dealCards(numCards));
-    }
-  }
-
   updatePlayerTurn() {
+    let index = undefined;
+
     if (!this.state.activePlayerId) {
       this.state.activePlayerId = this.state.players[this.playerIndex].id;
       return;
@@ -142,22 +140,20 @@ exports.UnoRoom = class extends (
         break;
 
       case 'drawTwo':
-        this.choosePlayer();
-        this.getPlayerById(this.state.activePlayerId).dealCards(2);
+        index = this.state.isClockwiseDirection ? this.nextPlayer() : this.previousPlayer();
+        this.getPlayerById(this.state.players[index].id).updateCards(this.dealCards(2));
         this.choosePlayer();
         break;
 
       case 'wildDrawFour':
-        this.choosePlayer();
-        this.getPlayerById(this.state.activePlayerId).dealCards(2);
+        index = this.state.isClockwiseDirection ? this.nextPlayer() : this.previousPlayer();
+        this.getPlayerById(this.state.players[index].id).updateCards(this.dealCards(4));
         this.choosePlayer();
         break;
 
       default:
         this.choosePlayer();
     }
-
-    this.checkPlayerPenaltyCards();
   }
 
   changeDirection() {
@@ -171,7 +167,9 @@ exports.UnoRoom = class extends (
 
   choosePlayer() {
     this.playerIndex = this.state.isClockwiseDirection ? this.nextPlayer() : this.previousPlayer();
+    console.log('playerid', this.state.activePlayerId);
     this.state.activePlayerId = this.state.players[this.playerIndex].id;
+    console.log('playerid', this.state.activePlayerId);
   }
 
   nextPlayer() {
@@ -185,9 +183,9 @@ exports.UnoRoom = class extends (
   dealCards(value = 1) {
     let cards = [];
     for (let i = 0; i < value; i++) {
-      cards.push(this.getRandomCard());
-      // cards.push(this.deck.splice(this.deck.length - 1, 1)[0]);
-      //this.state.deckSize = this.deck.length;
+      // cards.push(this.getRandomCard());
+      cards.push(this.deck.splice(this.deck.length - 1, 1)[0]);
+      this.state.deckSize = this.deck.length;
     }
     return cards;
   }

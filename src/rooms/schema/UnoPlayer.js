@@ -15,7 +15,7 @@ class Player extends Schema {
   }
 
   updateCards(cards) {
-    console.log(cards.length);
+    console.log('update cards:', cards.length);
     this.cards.push(...cards);
     this.cardsLength = this.cards.length;
   }
