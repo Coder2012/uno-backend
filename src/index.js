@@ -33,4 +33,4 @@ gameServer.define('uno', UnoRoom);
 app.use("/colyseus", monitor());
 
 gameServer.listen(port);
-console.log(`Listening on ws://localhost:${ port }`)
+console.log(`Listening on ws://host.docker.internal:${ port }`)
