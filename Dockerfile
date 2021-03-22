@@ -2,11 +2,11 @@ FROM node:14
 
 ENV PORT 8080
 
-WORKDIR /usr/src/app
+WORKDIR /app
 
-COPY package*.json ./
+COPY package.json .
 
-RUN npm ci
+RUN npm install
 
 COPY . .
 

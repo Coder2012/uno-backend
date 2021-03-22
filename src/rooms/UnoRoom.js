@@ -128,27 +128,27 @@ exports.UnoRoom = class extends (
     switch (this.currentCard.action?.type) {
       case 'reverse':
         this.changeDirection();
-        if (this.state.players.length > 2) {
+        if (this.state.players.length === 2) {
+          this.skipPlayer();
+        }else{
           this.choosePlayer();
         }
         break;
 
       case 'skip':
-        if (this.state.players.length > 2) {
-          this.skipPlayer();
-        }
+        this.skipPlayer();
         break;
 
       case 'drawTwo':
         index = this.state.isClockwiseDirection ? this.nextPlayer() : this.previousPlayer();
         this.getPlayerById(this.state.players[index].id).updateCards(this.dealCards(2));
-        this.choosePlayer();
+        this.skipPlayer();
         break;
 
       case 'wildDrawFour':
         index = this.state.isClockwiseDirection ? this.nextPlayer() : this.previousPlayer();
         this.getPlayerById(this.state.players[index].id).updateCards(this.dealCards(4));
-        this.choosePlayer();
+        this.skipPlayer();
         break;
 
       default:
@@ -161,15 +161,14 @@ exports.UnoRoom = class extends (
   }
 
   skipPlayer() {
+    if(this.state.players.length === 2) return;
     this.choosePlayer();
     this.choosePlayer();
   }
 
   choosePlayer() {
     this.playerIndex = this.state.isClockwiseDirection ? this.nextPlayer() : this.previousPlayer();
-    console.log('playerid', this.state.activePlayerId);
     this.state.activePlayerId = this.state.players[this.playerIndex].id;
-    console.log('playerid', this.state.activePlayerId);
   }
 
   nextPlayer() {
