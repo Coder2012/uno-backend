@@ -3,10 +3,11 @@ const Schema = schema.Schema;
 const { Card } = require('./UnoCard');
 
 class Player extends Schema {
-  constructor({ id, name }) {
+  constructor({ id, name, friendlyId }) {
     super();
 
     this.id = id;
+    this.friendlyId = friendlyId;
     this.name = name;
     this.isReady = false;
     this.isOwner = false;
@@ -15,7 +16,7 @@ class Player extends Schema {
   }
 
   updateCards(cards) {
-    console.log('update cards:', cards.length);
+    //console.log('update cards:', JSON.stringify(cards));
     this.cards.push(...cards);
     this.cardsLength = this.cards.length;
   }
@@ -47,6 +48,7 @@ class Player extends Schema {
 
 schema.defineTypes(Player, {
   id: 'string',
+  friendlyId: 'string',
   name: 'string',
   isReady: 'boolean',
   isOwner: 'boolean',
@@ -54,12 +56,11 @@ schema.defineTypes(Player, {
   cardsLength: 'number',
 });
 
-// schema.filter(function (client, value, root) {
-//   return client.sessionId === this.id;
-// })(Player.prototype, 'id');
+schema.filter(function (client, value, root) {
+  return client.sessionId === this.id;
+})(Player.prototype, 'id');
 
 schema.filter(function (client, value, root) {
-  console.log('client: ', client.sessionId);
   return client.sessionId === this.id;
 })(Player.prototype, 'cards');
 

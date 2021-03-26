@@ -32,12 +32,15 @@ exports.UnoRoom = class extends (
     this.state.deckSize = this.deck.length;
 
     this.onMessage('start', (client, message) => {
-      const isOwner = this.getPlayerById(client.sessionId);
-      if (isOwner) {
-        this.state.isRunning = true;
+      if(this.isEveryoneReady()) {
+        this.state.isRunning = this.getPlayerById(client.sessionId).isOwner;
+        this.onStart();
       }
-      this.onStart();
     });
+
+    this.onMessage('ready', (client, message) => {
+      this.getPlayerById(client.sessionId).isReady = true;
+    })
 
     this.onMessage('playCard', (client, cardId) => {
       console.log('playCard recieved:', client.sessionId);
@@ -76,8 +79,8 @@ exports.UnoRoom = class extends (
   onJoin(client, options) {
     console.log(`Player joined: id=${client.id} name:${options.name}`);
 
-    const player = new Player({ id: client.id, ...options });
-    player.isOwner = !this.state.players.length;
+    const player = new Player({ id: client.id, friendlyId: client.id.slice(0, 3), ...options });
+    player.isReady = player.isOwner = !this.state.players.length;
     this.state.players.push(player);
   }
 
@@ -121,7 +124,7 @@ exports.UnoRoom = class extends (
     let index = undefined;
 
     if (!this.state.activePlayerId) {
-      this.state.activePlayerId = this.state.players[this.playerIndex].id;
+      this.setActivePlayer(this.playerIndex);
       return;
     }
 
@@ -168,7 +171,7 @@ exports.UnoRoom = class extends (
 
   choosePlayer() {
     this.playerIndex = this.state.isClockwiseDirection ? this.nextPlayer() : this.previousPlayer();
-    this.state.activePlayerId = this.state.players[this.playerIndex].id;
+    this.setActivePlayer(this.playerIndex);
   }
 
   nextPlayer() {
@@ -182,8 +185,8 @@ exports.UnoRoom = class extends (
   dealCards(value = 1) {
     let cards = [];
     for (let i = 0; i < value; i++) {
-      // cards.push(this.getRandomCard());
-      cards.push(this.deck.splice(this.deck.length - 1, 1)[0]);
+      cards.push(this.getRandomCard());
+      // cards.push(this.deck.splice(this.deck.length - 1, 1)[0]);
       this.state.deckSize = this.deck.length;
     }
     return cards;
@@ -198,6 +201,15 @@ exports.UnoRoom = class extends (
 
   getPlayerById(id) {
     return this.state.players.find((player) => player.id === id);
+  }
+
+  setActivePlayer(index) {
+    this.state.activePlayerId = this.state.players[index].id;
+    this.state.activeFriendlyId = this.getPlayerById(this.state.activePlayerId).friendlyId;
+  }
+
+  isEveryoneReady() {
+    return this.state.players.length > 1 && this.state.players.every(player => player.isReady);
   }
 
   onDispose() {}

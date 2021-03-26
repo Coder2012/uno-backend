@@ -9,6 +9,7 @@ class UnoRoomState extends schema.Schema {
     this.stack = new schema.ArraySchema();
     this.isRunning = false;
     this.activePlayerId = null;
+    this.activeFriendlyId = null;
     this.isDirectionClockwise = true;
   }
 }
@@ -19,6 +20,7 @@ schema.defineTypes(UnoRoomState, {
   deckSize: 'number',
   isRunning: 'boolean',
   activePlayerId: 'string',
+  activeFriendlyId: 'string',
   isDirectionClockwise: 'boolean',
 });
 
