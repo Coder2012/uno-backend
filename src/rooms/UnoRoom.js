@@ -204,8 +204,16 @@ exports.UnoRoom = class extends (
   }
 
   setActivePlayer(index) {
+    this.disableCardPickup();
     this.state.activePlayerId = this.state.players[index].id;
-    this.state.activeFriendlyId = this.getPlayerById(this.state.activePlayerId).friendlyId;
+    
+    const player = this.getPlayerById(this.state.activePlayerId);
+    player.isPickupActive = true;
+    this.state.activeFriendlyId = player.friendlyId;
+  }
+
+  disableCardPickup() {
+    this.state.players.forEach(player => player.isPickupActive = false);
   }
 
   isEveryoneReady() {

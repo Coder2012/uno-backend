@@ -11,12 +11,12 @@ class Player extends Schema {
     this.name = name;
     this.isReady = false;
     this.isOwner = false;
+    this.isPickupActive = false;
     this.cards = new schema.ArraySchema();
     this.cardsLength = 0;
   }
 
   updateCards(cards) {
-    //console.log('update cards:', JSON.stringify(cards));
     this.cards.push(...cards);
     this.cardsLength = this.cards.length;
   }
@@ -52,6 +52,7 @@ schema.defineTypes(Player, {
   name: 'string',
   isReady: 'boolean',
   isOwner: 'boolean',
+  isPickupActive: 'boolean',
   cards: [Card],
   cardsLength: 'number',
 });
@@ -59,6 +60,10 @@ schema.defineTypes(Player, {
 schema.filter(function (client, value, root) {
   return client.sessionId === this.id;
 })(Player.prototype, 'id');
+
+schema.filter(function (client, value, root) {
+  return client.sessionId === this.id;
+})(Player.prototype, 'isOwner');
 
 schema.filter(function (client, value, root) {
   return client.sessionId === this.id;
