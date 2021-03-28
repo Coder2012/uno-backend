@@ -10,6 +10,7 @@ class UnoRoomState extends schema.Schema {
     this.isRunning = false;
     this.activePlayerId = null;
     this.activeFriendlyId = null;
+    this.isPlayersReady = false;
     this.isDirectionClockwise = true;
   }
 }
@@ -21,6 +22,7 @@ schema.defineTypes(UnoRoomState, {
   isRunning: 'boolean',
   activePlayerId: 'string',
   activeFriendlyId: 'string',
+  isPlayersReady: 'boolean',
   isDirectionClockwise: 'boolean',
 });
 

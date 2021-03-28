@@ -32,7 +32,7 @@ exports.UnoRoom = class extends (
     this.state.deckSize = this.deck.length;
 
     this.onMessage('start', (client, message) => {
-      if(this.isEveryoneReady()) {
+      if(this.state.isPlayersReady) {
         this.state.isRunning = this.getPlayerById(client.sessionId).isOwner;
         this.onStart();
       }
@@ -40,6 +40,7 @@ exports.UnoRoom = class extends (
 
     this.onMessage('ready', (client, message) => {
       this.getPlayerById(client.sessionId).isReady = true;
+      this.state.isPlayersReady = this.isEveryoneReady();
     })
 
     this.onMessage('playCard', (client, cardId) => {
@@ -51,13 +52,14 @@ exports.UnoRoom = class extends (
 
       this.currentCard = player.getCardById(cardId);
 
+      // if player can't go, they need to pickup a card
+      if (!this.isValidCard(this.currentCard)) return;
+
       if (this.requiresColorChoice()) {
         client.send('getColor');
         return;
       }
 
-      // if player can't go, they need to pickup a card
-      if (!this.isValidCard(this.currentCard)) return;
       this.playCard(player, cardId);
     });
 
@@ -206,7 +208,7 @@ exports.UnoRoom = class extends (
   setActivePlayer(index) {
     this.disableCardPickup();
     this.state.activePlayerId = this.state.players[index].id;
-    
+
     const player = this.getPlayerById(this.state.activePlayerId);
     player.isPickupActive = true;
     this.state.activeFriendlyId = player.friendlyId;

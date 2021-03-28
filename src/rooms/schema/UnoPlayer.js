@@ -61,9 +61,9 @@ schema.filter(function (client, value, root) {
   return client.sessionId === this.id;
 })(Player.prototype, 'id');
 
-schema.filter(function (client, value, root) {
-  return client.sessionId === this.id;
-})(Player.prototype, 'isOwner');
+// schema.filter(function (client, value, root) {
+//   return client.sessionId === this.id;
+// })(Player.prototype, 'isOwner');
 
 schema.filter(function (client, value, root) {
   return client.sessionId === this.id;
