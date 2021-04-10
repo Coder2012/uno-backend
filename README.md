@@ -12,7 +12,7 @@ npm start
 ## Docker
 
 ```
-docker run -d -p 8080:8080 -v /home/coder2012/git/uno-backend:/app -v /app/node_modules uno
+docker run -d -p 8080:8080 -v /home/<username>/git/uno-backend:/app -v /app/node_modules uno
 ```
 
 ## Structure
