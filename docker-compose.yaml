@@ -1,0 +1,15 @@
+# docker-compose.yml
+version: "3.9"
+
+services:
+  app:
+    image: uno
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    ports:
+      - 8080:8080
+      - 9229:9229
+    volumes:
+      - /home/coder2012/git/uno-backend:/app
+      - /app/node_modules

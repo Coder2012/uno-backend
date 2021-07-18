@@ -5,9 +5,7 @@ const { Player } = require('./schema/UnoPlayer');
 
 const { INITIAL_CARDS_NUM } = require('../rooms/constants');
 
-exports.UnoRoom = class extends (
-  colyseus.Room
-) {
+exports.UnoRoom = class extends colyseus.Room {
   constructor() {
     super();
 
@@ -32,7 +30,7 @@ exports.UnoRoom = class extends (
     this.state.deckSize = this.deck.length;
 
     this.onMessage('start', (client, message) => {
-      if(this.state.isPlayersReady) {
+      if (this.state.isPlayersReady) {
         this.state.isRunning = this.getPlayerById(client.sessionId).isOwner;
         this.onStart();
       }
@@ -41,7 +39,7 @@ exports.UnoRoom = class extends (
     this.onMessage('ready', (client, message) => {
       this.getPlayerById(client.sessionId).isReady = true;
       this.state.isPlayersReady = this.isEveryoneReady();
-    })
+    });
 
     this.onMessage('playCard', (client, cardId) => {
       console.log('playCard recieved:', client.sessionId);
@@ -61,11 +59,15 @@ exports.UnoRoom = class extends (
       }
 
       this.playCard(player, cardId);
+      this.checkForWinner();
+      this.updatePlayerTurn();
     });
 
     this.onMessage('colorSelected', (client, colorId) => {
       const player = this.getPlayerById(client.sessionId);
       this.playCard(player, this.currentCard.id, colorId);
+      this.checkForWinner();
+      this.updatePlayerTurn();
     });
 
     this.onMessage('getCard', (client) => {
@@ -75,7 +77,7 @@ exports.UnoRoom = class extends (
 
     this.onMessage('pass', (client) => {
       this.choosePlayer();
-    })
+    });
   }
 
   onJoin(client, options) {
@@ -101,12 +103,11 @@ exports.UnoRoom = class extends (
     if (colorId) this.currentCard.color = colorId;
     player.playCard(cardId);
     this.state.stack.push(this.currentCard);
-    this.updatePlayerTurn();
   }
 
   isValidCard() {
     const card = this.currentCard;
-    const lastCard = this.state.stack[this.state.stack.length - 1];
+    const lastCard = this.getLastPlayedCard();
 
     if (!lastCard) return true;
     else if (card.color === lastCard.color) return true;
@@ -135,7 +136,7 @@ exports.UnoRoom = class extends (
         this.changeDirection();
         if (this.state.players.length === 2) {
           this.skipPlayer();
-        }else{
+        } else {
           this.choosePlayer();
         }
         break;
@@ -145,13 +146,13 @@ exports.UnoRoom = class extends (
         break;
 
       case 'drawTwo':
-        index = this.state.isClockwiseDirection ? this.nextPlayer() : this.previousPlayer();
+        index = this.state.isClockwiseDirection ? this.getNextPlayerIndex() : this.getPreviousPlayerIndex();
         this.getPlayerById(this.state.players[index].id).updateCards(this.dealCards(2));
         this.skipPlayer();
         break;
 
       case 'wildDrawFour':
-        index = this.state.isClockwiseDirection ? this.nextPlayer() : this.previousPlayer();
+        index = this.state.isClockwiseDirection ? this.getNextPlayerIndex() : this.getPreviousPlayerIndex();
         this.getPlayerById(this.state.players[index].id).updateCards(this.dealCards(4));
         this.skipPlayer();
         break;
@@ -166,21 +167,21 @@ exports.UnoRoom = class extends (
   }
 
   skipPlayer() {
-    if(this.state.players.length === 2) return;
+    if (this.state.players.length === 2) return;
     this.choosePlayer();
     this.choosePlayer();
   }
 
   choosePlayer() {
-    this.playerIndex = this.state.isClockwiseDirection ? this.nextPlayer() : this.previousPlayer();
+    this.playerIndex = this.state.isClockwiseDirection ? this.getNextPlayerIndex() : this.getPreviousPlayerIndex();
     this.setActivePlayer(this.playerIndex);
   }
 
-  nextPlayer() {
+  getNextPlayerIndex() {
     return this.playerIndex === this.state.players.length - 1 ? 0 : this.playerIndex + 1;
   }
 
-  previousPlayer() {
+  getPreviousPlayerIndex() {
     return this.playerIndex === 0 ? this.state.players.length - 1 : this.playerIndex - 1;
   }
 
@@ -209,17 +210,30 @@ exports.UnoRoom = class extends (
     this.disableCardPickup();
     this.state.activePlayerId = this.state.players[index].id;
 
-    const player = this.getPlayerById(this.state.activePlayerId);
+    const player = this.getActivePlayer();
     player.isPickupActive = true;
     this.state.activeFriendlyId = player.friendlyId;
   }
 
   disableCardPickup() {
-    this.state.players.forEach(player => player.isPickupActive = false);
+    this.state.players.forEach((player) => (player.isPickupActive = false));
+  }
+
+  getLastPlayedCard() {
+    return this.state.stack[this.state.stack.length - 1];
   }
 
   isEveryoneReady() {
-    return this.state.players.length > 1 && this.state.players.every(player => player.isReady);
+    return this.state.players.length > 1 && this.state.players.every((player) => player.isReady);
+  }
+
+  getActivePlayer() {
+    return this.getPlayerById(this.state.activePlayerId);
+  }
+
+  checkForWinner() {
+    const player = this.getActivePlayer();
+    if (player.cards.length === 0) player.isWinner = true;
   }
 
   onDispose() {}

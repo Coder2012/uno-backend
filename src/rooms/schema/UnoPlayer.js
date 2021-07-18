@@ -12,6 +12,7 @@ class Player extends Schema {
     this.isReady = false;
     this.isOwner = false;
     this.isPickupActive = false;
+    this.isWinner = false;
     this.cards = new schema.ArraySchema();
     this.cardsLength = 0;
   }
@@ -52,6 +53,7 @@ schema.defineTypes(Player, {
   name: 'string',
   isReady: 'boolean',
   isOwner: 'boolean',
+  isWinner: 'boolean',
   isPickupActive: 'boolean',
   cards: [Card],
   cardsLength: 'number',
