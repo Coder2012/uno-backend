@@ -189,9 +189,8 @@ exports.UnoRoom = class extends colyseus.Room {
     let cards = [];
     for (let i = 0; i < value; i++) {
       cards.push(this.getRandomCard());
-      // cards.push(this.deck.splice(this.deck.length - 1, 1)[0]);
-      this.state.deckSize = this.deck.length;
     }
+    this.state.deckSize = this.deck.length;
     return cards;
   }
 
